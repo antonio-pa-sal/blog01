@@ -2,6 +2,18 @@ from django.db import models
 from django.utils import timezone
 from ckeditor.fields import RichTextField
 
+class PublishedManager(models.Manager): # gestor de modelos que recupera post publicados
+    def get_queryset(self): 
+        return super(PublishedManager, self).get_queryset().filter(publicated='published')
+
+class FeaturedManager(models.Manager): # gestor de modelos que recupera post publicados y destacados
+    def get_queryset(self): 
+        return super(FeaturedManager, self).get_queryset().filter(publicated='published', featured='featured')
+
+class PromotedManager(models.Manager): # gestor de modelos que recupera post publicados y promocionados
+    def get_queryset(self): 
+        return super(PromotedManager, self).get_queryset().filter(publicated='published', promoted='promoted')
+
 class ModeloBase(models.Model):
     STATUS_ACTIVATED = (
         ('activated', 'Activated'),
@@ -62,16 +74,16 @@ class Post(ModeloBase):
     )
 
     title = models.CharField('Título del Post',max_length = 150, unique = True)
-    slug = models.CharField('Slug', max_length = 150, unique = True)
+    slug = models.CharField('Slug', max_length = 150, unique_for_date= 'publish')
     reading = models.IntegerField('Tiempo de lectura (nº entero)', default=10)
     description = models.TextField('Descripción')
     author = models.ForeignKey(Author, on_delete = models.CASCADE)
     category = models.ForeignKey(Category, on_delete = models.CASCADE)
     body1 = RichTextField()
     reference_image1 = models.ImageField('Imagen Referencial 1', upload_to = 'imagenes/', max_length = 255)
-    body2 = RichTextField(blank=True)
+    body2 = RichTextField(blank=True, default='')
     reference_image2 = models.ImageField('Imagen Referencial 2', upload_to = 'imagenes/', max_length = 255, blank=True)
-    body3 = RichTextField(blank=True)
+    body3 = RichTextField(blank=True, default='')
     reference_image3 = models.ImageField('Imagen Referencial 3', upload_to = 'imagenes/', max_length = 255, blank=True)
     quoted = models.CharField('Introduce cita literal',max_length = 250, null = True, blank=True)
     publish = models.DateField('Fecha de Publicación', default=timezone.now)
@@ -84,6 +96,10 @@ class Post(ModeloBase):
     promoted = models.CharField('Promocionado', max_length=15,
                             choices=STATUS_PROMOTED,
                             default='normal')
+    objects = models.Manager() # The default manager. 
+    published = PublishedManager() # Our custom manager for publicated post.
+    feature = FeaturedManager() # Our custom manager for featured post.
+    promote = PromotedManager() # Our custom manager for promoted post.
 
     class Meta:
         verbose_name = 'Post'
